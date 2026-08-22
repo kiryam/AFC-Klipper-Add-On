@@ -628,7 +628,7 @@ class afcFunction:
         msg += f" speed_factor: {round_floats(self.afc.gcode_move.speed_factor)}"
         msg += f" extrude_factor: {round_floats(self.afc.gcode_move.extrude_factor)}"
         msg += f" absolute_coord: {self.afc.gcode_move.absolute_coord}"
-        msg += f" absolute_extrude: {self.afc.gcode_move.absolute_extrude}\n"
+        msg += f" absolute_extrude: {getattr(self.afc.gcode_move, 'allow_absolute_extrude', getattr(self.afc.gcode_move, 'absolute_extrude', True))}\n"
         self.logger.debug(msg, only_debug=True)
 
     def check_absolute_mode( self, func_name:str="" ):
@@ -639,14 +639,16 @@ class afcFunction:
         :params func_name: String for name of function that function is being called from,
                            this is added to debug log to aid in debugging
         """
+        extrude_attr = "allow_absolute_extrude" if hasattr(self.afc.gcode_move, "allow_absolute_extrude") \
+                       else "absolute_extrude"
         # Verify that printer is in absolute mode, and set True if in relative mode to prevent out of bound moves
         self.log_toolhead_pos("{}: check absolute mode, POS:".format(func_name))
         if not self.afc.gcode_move.absolute_coord:
             self.logger.debug("Printer coords not in absolute mode, setting to absolute mode")
             self.afc.gcode_move.absolute_coord = True
-        if not self.afc.gcode_move.absolute_extrude:
+        if not getattr(self.afc.gcode_move, extrude_attr):
             self.logger.debug("Printer extruder not in absolute mode, setting to absolute mode")
-            self.afc.gcode_move.absolute_extrude = True
+            setattr(self.afc.gcode_move, extrude_attr, True)
 
     def get_extruder_pos(self, eventtime=None, past_extruder_position=None, extruder=None):
         """
